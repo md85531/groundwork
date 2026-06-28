@@ -280,21 +280,29 @@
   "use strict";
   var KEY="groundwork.v1";
   var TOGGLES=["walk","strength","m_am","m_mid","m_pm"];
-  function load(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return {};}}
-  function save(d){try{localStorage.setItem(KEY,JSON.stringify(d));}catch(e){}}
-  var store=load();
+
+  // Storage: Claude's artifact storage first (so it's live in-app),
+  // then localStorage (so it persists once hosted on GitHub Pages), then memory.
+  var Store={
+    mem:null,
+    async get(){
+      try{ if(window.storage){ var r=await window.storage.get(KEY); if(r&&r.value) return JSON.parse(r.value); } }catch(e){}
+      try{ var v=localStorage.getItem(KEY); if(v) return JSON.parse(v); }catch(e){}
+      return this.mem||{};
+    },
+    set(v){
+      this.mem=v;
+      try{ if(window.storage){ window.storage.set(KEY, JSON.stringify(v)); } }catch(e){}
+      try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){}
+    }
+  };
+
+  var store={}, rec={}, today, todayKey;
+  var jotOpen=false, jotIdx=0;
 
   function ymd(dt){return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");}
-  function counts(rec){return !!(rec&&(rec.walk||rec.strength||rec.m_am||rec.m_mid||rec.m_pm));}
-
-  var today=new Date();
-  var todayKey=ymd(today);
-  if(!store[todayKey])store[todayKey]={};
-  var rec=store[todayKey];
-
-  var hh=today.getHours();
-  document.getElementById("greet").textContent=(hh<12?"Good morning":hh<18?"Good afternoon":"Good evening")+", Melissa.";
-  document.getElementById("date").textContent=today.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+  function counts(r){return !!(r&&(r.walk||r.strength||r.m_am||r.m_mid||r.m_pm));}
+  function save(){ Store.set(store); }
 
   function streak(){
     var n=0,d=new Date(today);
@@ -304,14 +312,8 @@
   }
   function weekStart(){var d=new Date(today);d.setDate(d.getDate()-((d.getDay()+6)%7));d.setHours(0,0,0,0);return d;}
   function strengthThisWeek(){var s=weekStart(),n=0;for(var i=0;i<7;i++){var k=ymd(new Date(s.getFullYear(),s.getMonth(),s.getDate()+i));if(store[k]&&store[k].strength)n++;}return n;}
-  function monthCount(){
-    var y=today.getFullYear(),m=today.getMonth(),n=0,dim=new Date(y,m+1,0).getDate();
-    for(var i=1;i<=dim;i++){if(counts(store[ymd(new Date(y,m,i))]))n++;}
-    return n;
-  }
+  function monthCount(){var y=today.getFullYear(),m=today.getMonth(),n=0,dim=new Date(y,m+1,0).getDate();for(var i=1;i<=dim;i++){if(counts(store[ymd(new Date(y,m,i))]))n++;}return n;}
 
-  // ---- Just One Thing ----
-  var jotOpen=false, jotIdx=0;
   function suggestions(){
     var s=[];
     if(!(rec.water>=1))s.push({t:"Refill your water — just one glass.",act:function(){rec.water=(rec.water||0)+1;}});
@@ -322,46 +324,28 @@
     return s;
   }
   function renderJot(){
-    var panel=document.getElementById("jotPanel");
-    var txt=document.getElementById("jotText");
-    var acts=document.getElementById("jotActions");
+    var panel=document.getElementById("jotPanel"),txt=document.getElementById("jotText"),acts=document.getElementById("jotActions");
     panel.classList.toggle("open",jotOpen);
     if(!jotOpen)return;
-    var list=suggestions();
-    acts.innerHTML="";
-    if(list.length===0){
-      txt.textContent="You've done plenty today. Resting counts too.";
-      return;
-    }
+    var list=suggestions();acts.innerHTML="";
+    if(list.length===0){txt.textContent="You've done plenty today. Resting counts too.";return;}
     if(jotIdx>=list.length)jotIdx=0;
-    var pick=list[jotIdx];
-    txt.textContent=pick.t;
-    var doBtn=document.createElement("button");
-    doBtn.className="do";doBtn.textContent="Mark it done";
-    doBtn.onclick=function(){pick.act();save(store);jotOpen=false;jotIdx=0;render();};
+    var pick=list[jotIdx];txt.textContent=pick.t;
+    var doBtn=document.createElement("button");doBtn.className="do";doBtn.textContent="Mark it done";
+    doBtn.onclick=function(){pick.act();save();jotOpen=false;jotIdx=0;render();};
     acts.appendChild(doBtn);
-    if(list.length>1){
-      var more=document.createElement("button");
-      more.textContent="Something else";
-      more.onclick=function(){jotIdx=(jotIdx+1)%list.length;renderJot();};
-      acts.appendChild(more);
-    }
+    if(list.length>1){var more=document.createElement("button");more.textContent="Something else";more.onclick=function(){jotIdx=(jotIdx+1)%list.length;renderJot();};acts.appendChild(more);}
   }
-  document.getElementById("jotBtn").addEventListener("click",function(){jotOpen=!jotOpen;jotIdx=0;renderJot();});
 
-  // ---- calendar ----
   function renderCal(){
     var cal=document.getElementById("cal");cal.innerHTML="";
     var y=today.getFullYear(),m=today.getMonth();
-    var lead=(new Date(y,m,1).getDay()+6)%7;
-    var dim=new Date(y,m+1,0).getDate();
+    var lead=(new Date(y,m,1).getDay()+6)%7,dim=new Date(y,m+1,0).getDate();
     for(var b=0;b<lead;b++){var bl=document.createElement("div");bl.className="cell blank";cal.appendChild(bl);}
     for(var i=1;i<=dim;i++){
-      var dd=new Date(y,m,i),k=ymd(dd);
-      var c=document.createElement("div");
+      var dd=new Date(y,m,i),k=ymd(dd),c=document.createElement("div");
       c.className="cell"+(counts(store[k])?" on":"")+(k===todayKey?" today":"")+(dd>today&&k!==todayKey?" future":"");
-      c.textContent=i;
-      cal.appendChild(c);
+      c.textContent=i;cal.appendChild(c);
     }
     document.getElementById("monthName").textContent=today.toLocaleDateString(undefined,{month:"long"});
     document.getElementById("monthCap").textContent=monthCount()+" of "+dim+" days";
@@ -370,20 +354,16 @@
   function render(){
     TOGGLES.forEach(function(k){var b=document.querySelector('.toggle[data-key="'+k+'"]');if(b)b.setAttribute("aria-pressed",rec[k]?"true":"false");});
     document.getElementById("waterCount").textContent=rec.water||0;
-
     var sw=strengthThisWeek();
     document.getElementById("strengthMeta").textContent=sw+"/2 this week";
     document.getElementById("wpip0").className="pip"+(sw>=1?" on":"");
     document.getElementById("wpip1").className="pip"+(sw>=2?" on":"");
-
     var mc=monthCount();
     document.getElementById("statMonth").textContent=mc+(mc===1?" day":" days");
     document.getElementById("statStreak").textContent=streak();
-
-    var lit=counts(rec);
-    var hero=document.getElementById("hero");
+    var lit=counts(rec),hero=document.getElementById("hero");
     hero.classList.toggle("lit",lit);
-    document.getElementById("heroEyebrow").textContent=lit?"Today ✓":"Today";
+    document.getElementById("heroEyebrow").textContent=lit?"Today \u2713":"Today";
     if(lit){
       document.getElementById("heroState").textContent="Today counts.";
       var st=streak();
@@ -392,16 +372,32 @@
       document.getElementById("heroState").textContent="A small thing starts the day.";
       document.getElementById("heroSub").textContent="Feeling stuck? Tap below and I'll pick one for you.";
     }
-    renderJot();
-    renderCal();
+    renderJot();renderCal();
   }
 
-  document.querySelectorAll(".toggle").forEach(function(btn){
-    btn.addEventListener("click",function(){var k=btn.getAttribute("data-key");rec[k]=!rec[k];save(store);render();});
-  });
-  document.getElementById("waterPlus").addEventListener("click",function(){rec.water=(rec.water||0)+1;save(store);render();});
-  document.getElementById("waterMinus").addEventListener("click",function(){rec.water=Math.max(0,(rec.water||0)-1);save(store);render();});
-  document.getElementById("resetBtn").addEventListener("click",function(){if(confirm("Clear everything tracked today? Past days stay put.")){store[todayKey]={};rec=store[todayKey];jotOpen=false;save(store);render();}});
+  function wire(){
+    document.querySelectorAll(".toggle").forEach(function(btn){
+      btn.addEventListener("click",function(){var k=btn.getAttribute("data-key");rec[k]=!rec[k];save();render();});
+    });
+    document.getElementById("waterPlus").addEventListener("click",function(){rec.water=(rec.water||0)+1;save();render();});
+    document.getElementById("waterMinus").addEventListener("click",function(){rec.water=Math.max(0,(rec.water||0)-1);save();render();});
+    document.getElementById("resetBtn").addEventListener("click",function(){if(confirm("Clear everything tracked today? Past days stay put.")){store[todayKey]={};rec=store[todayKey];jotOpen=false;save();render();}});
+    document.getElementById("jotBtn").addEventListener("click",function(){jotOpen=!jotOpen;jotIdx=0;renderJot();});
+  }
 
-  render();
+  (async function init(){
+    today=new Date();todayKey=ymd(today);
+    var loaded=await Store.get();
+    store=(loaded&&typeof loaded==="object")?loaded:{};
+    if(!store[todayKey])store[todayKey]={};
+    rec=store[todayKey];
+    var hh=today.getHours();
+    document.getElementById("greet").textContent=(hh<12?"Good morning":hh<18?"Good afternoon":"Good evening")+", Melissa.";
+    document.getElementById("date").textContent=today.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+    wire();
+    render();
+  })();
 })();
+</script>
+</body>
+</html>
