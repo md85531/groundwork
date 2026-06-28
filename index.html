@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Groundwork">
+<meta name="theme-color" content="#F4EDE8">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%235C7A6A'/%3E%3Cpath d='M90 134c0-30 0-44 0-44m0 0c0-17-11-30-28-30 0 19 11 30 28 30zm0 0c0-17 11-30 28-30 0 19-11 30-28 30z' fill='none' stroke='%23F4EDE8' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<title>Groundwork</title>
+<style>
+  :root{
+    --paper:#F4EDE8; --surface:#FBF8F4; --surface-2:#EFE6DD;
+    --ink:#382C31; --ink-soft:#897579; --line:#EADFD5;
+    --sage:#5C7A6A; --sage-deep:#46604F; --sage-wash:#E7EEE9;
+    --amber:#C2853E; --amber-wash:#F4E7D4;
+    --r:22px; --r-sm:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;
+    font-size:16px; line-height:1.5;
+    padding:max(22px,env(safe-area-inset-top)) 17px calc(48px + env(safe-area-inset-bottom));
+    max-width:500px; margin:0 auto; -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:ui-serif,"New York",Georgia,serif;}
+  .eyebrow{font-size:11px; letter-spacing:.17em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; margin:0;}
+
+  /* greeting */
+  header{margin:4px 4px 20px;}
+  .greet{font-size:27px; line-height:1.15; margin:0; font-weight:500; letter-spacing:-.01em;}
+  .date{color:var(--ink-soft); font-size:13.5px; margin:6px 0 0;}
+
+  /* shared card */
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:20px; margin-bottom:14px;}
+
+  /* hero */
+  .hero{transition:background .6s ease, border-color .6s ease;}
+  .hero.lit{background:linear-gradient(155deg,var(--amber-wash),var(--sage-wash)); border-color:transparent;}
+  .hero .eyebrow{margin-bottom:12px;}
+  .hero-state{margin:0; font-size:23px; font-weight:500; letter-spacing:-.01em; line-height:1.25;}
+  .hero-sub{margin:8px 0 0; color:var(--ink-soft); font-size:14.5px; line-height:1.45;}
+  .hero.lit .hero-sub{color:var(--ink); opacity:.7;}
+
+  /* just one thing */
+  .jot-btn{
+    margin-top:18px; width:100%; padding:14px; border-radius:var(--r-sm);
+    background:var(--sage); color:#fff; border:none; font:inherit; font-size:15.5px; font-weight:600;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+    transition:background .2s ease;
+  }
+  .jot-btn:active{background:var(--sage-deep);}
+  .hero.lit .jot-btn{background:rgba(70,96,79,.92);}
+  .jot-panel{margin-top:14px; padding:16px; background:rgba(255,255,255,.6); border-radius:var(--r-sm); border:1px solid var(--line); display:none;}
+  .jot-panel.open{display:block;}
+  .hero.lit .jot-panel{background:rgba(255,255,255,.5); border-color:rgba(56,44,49,.07);}
+  .jot-text{margin:0 0 14px; font-size:17px; line-height:1.4; font-weight:500;}
+  .jot-actions{display:flex; gap:9px;}
+  .jot-actions button{flex:1; padding:11px; border-radius:11px; font:inherit; font-size:14px; font-weight:600; cursor:pointer; border:1.5px solid var(--line); background:#fff; color:var(--ink);}
+  .jot-actions .do{background:var(--sage); color:#fff; border-color:var(--sage);}
+  .jot-actions .do:active{background:var(--sage-deep);}
+
+  /* hero stats strip */
+  .stats{display:flex; gap:20px; margin-top:18px; padding-top:16px; border-top:1px solid var(--line);}
+  .hero.lit .stats{border-top-color:rgba(56,44,49,.08);}
+  .stat-n{font-size:15px; font-weight:600; font-variant-numeric:tabular-nums;}
+  .stat-l{font-size:12.5px; color:var(--ink-soft);}
+
+  /* today checklist */
+  .group + .group{margin-top:6px; padding-top:6px; border-top:1px solid var(--line);}
+  .group-head{display:flex; justify-content:space-between; align-items:baseline; margin:12px 0 2px;}
+  .group:first-child .group-head{margin-top:2px;}
+  .meta{font-size:12px; color:var(--ink-soft); display:flex; align-items:center; gap:7px;}
+  .hint{font-size:13px; color:var(--ink-soft); margin:2px 0 6px; line-height:1.45;}
+
+  .toggle{width:100%; display:flex; align-items:center; gap:14px; background:none; border:none; padding:12px 0; cursor:pointer; font:inherit; color:var(--ink); text-align:left;}
+  .box{width:25px; height:25px; border-radius:8px; flex-shrink:0; border:2px solid var(--line); background:var(--surface-2); display:flex; align-items:center; justify-content:center; transition:background .2s, border-color .2s;}
+  .box svg{width:14px; height:14px; opacity:0; transform:scale(.5); transition:opacity .18s, transform .18s;}
+  .toggle[aria-pressed="true"] .box{background:var(--sage); border-color:var(--sage);}
+  .toggle[aria-pressed="true"] .box svg{opacity:1; transform:scale(1);}
+  .t-main{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;}
+  .t-label{font-size:16px; font-weight:500; transition:color .2s;}
+  .toggle[aria-pressed="true"] .t-label{color:var(--ink-soft);}
+  .t-note{font-size:12.5px; color:var(--ink-soft);}
+  .pips{display:flex; gap:5px;}
+  .pip{width:8px; height:8px; border-radius:50%; background:var(--surface-2); border:1.5px solid var(--line);}
+  .pip.on{background:var(--sage); border-color:var(--sage);}
+
+  .water{display:flex; align-items:center; gap:14px; padding:12px 0 2px;}
+  .water .t-main{flex:1;}
+  .stepper{display:flex; align-items:center; border:1.5px solid var(--line); border-radius:11px; overflow:hidden;}
+  .stepper button{width:40px; height:38px; border:none; background:var(--surface-2); font-size:20px; color:var(--sage-deep); cursor:pointer; font-family:inherit; line-height:1;}
+  .stepper button:active{background:var(--sage-wash);}
+  .water-count{min-width:42px; text-align:center; font-size:16px; font-weight:600; font-variant-numeric:tabular-nums;}
+
+  /* month */
+  .month-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px;}
+  .month-cap{font-size:13px; color:var(--ink-soft);}
+  .cal-dow{display:grid; grid-template-columns:repeat(7,1fr); gap:7px; margin-bottom:8px;}
+  .cal-dow span{text-align:center; font-size:10px; letter-spacing:.05em; color:var(--ink-soft); text-transform:uppercase;}
+  .cal{display:grid; grid-template-columns:repeat(7,1fr); gap:7px;}
+  .cell{aspect-ratio:1; border-radius:9px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--ink-soft); position:relative;}
+  .cell.blank{background:none;}
+  .cell.on{background:var(--sage); color:#fff; font-weight:600;}
+  .cell.today{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--amber);}
+  .cell.future{opacity:.4;}
+
+  /* reference */
+  .ref{border-top:1px solid var(--line);}
+  .ref:first-of-type{border-top:none;}
+  .ref summary{list-style:none; cursor:pointer; padding:15px 0; display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:15.5px; font-weight:500;}
+  .ref summary::-webkit-details-marker{display:none;}
+  .ref summary .chev{transition:transform .25s; color:var(--ink-soft); flex-shrink:0;}
+  .ref[open] summary .chev{transform:rotate(90deg);}
+  .ref-body{padding:0 0 16px; font-size:14.5px; line-height:1.55;}
+  .ref-body p{margin:0 0 10px;}
+  .ref-body .sub{font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--sage-deep); font-weight:700; margin:14px 0 7px;}
+  .ref-body ul{margin:0; padding:0; list-style:none;}
+  .ref-body li{padding:6px 0 6px 19px; position:relative; border-top:1px solid var(--line);}
+  .ref-body li:first-child{border-top:none;}
+  .ref-body li::before{content:""; position:absolute; left:2px; top:13px; width:6px; height:6px; border-radius:50%; background:var(--sage);}
+  .ref-body li.combo::before{background:var(--amber);}
+  .ref-body .ex{padding:11px 13px; background:var(--surface-2); border-radius:10px; font-size:13px; color:var(--ink-soft); margin-top:12px;}
+  .ref-body strong{font-weight:600;}
+
+  footer{text-align:center; margin-top:24px;}
+  .reset{background:none; border:none; color:var(--ink-soft); font:inherit; font-size:13px; cursor:pointer; text-decoration:underline; text-underline-offset:3px; padding:8px;}
+  .saved{font-size:12px; color:var(--ink-soft); margin-top:6px; opacity:.65;}
+
+  :focus-visible{outline:2.5px solid var(--sage); outline-offset:2px; border-radius:6px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 class="greet serif" id="greet">Good day, Melissa.</h1>
+  <p class="date" id="date"></p>
+</header>
+
+<section class="card hero" id="hero" aria-live="polite">
+  <p class="eyebrow" id="heroEyebrow">Today</p>
+  <p class="hero-state serif" id="heroState">A small thing starts the day.</p>
+  <p class="hero-sub" id="heroSub">Feeling stuck? Tap below and I'll pick one for you.</p>
+
+  <button class="jot-btn" id="jotBtn">Just one thing &rarr;</button>
+  <div class="jot-panel" id="jotPanel">
+    <p class="jot-text" id="jotText"></p>
+    <div class="jot-actions" id="jotActions"></div>
+  </div>
+
+  <div class="stats">
+    <div><div class="stat-n" id="statMonth">0 days</div><div class="stat-l" id="statMonthL">this month</div></div>
+    <div><div class="stat-n" id="statStreak">0</div><div class="stat-l">day streak</div></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="group">
+    <div class="group-head">
+      <p class="eyebrow">Move</p>
+      <span class="meta"><span id="strengthMeta">0/2 this week</span><span class="pips"><span class="pip" id="wpip0"></span><span class="pip" id="wpip1"></span></span></span>
+    </div>
+    <button class="toggle" data-key="walk" aria-pressed="false">
+      <span class="box"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5l3.5 3.5 7.5-8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="t-main"><span class="t-label">Walk</span><span class="t-note">10–20 min, anytime it fits</span></span>
+    </button>
+    <button class="toggle" data-key="strength" aria-pressed="false">
+      <span class="box"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5l3.5 3.5 7.5-8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="t-main"><span class="t-label">Strength session</span><span class="t-note">~20 min · two a week, whenever</span></span>
+    </button>
+  </div>
+
+  <div class="group">
+    <div class="group-head"><p class="eyebrow">Fuel</p></div>
+    <p class="hint">A protein + fiber bite every few hours — <em>before</em> hunger hits — keeps the 4pm crash and the drive-thru off the table.</p>
+    <button class="toggle" data-key="m_am" aria-pressed="false">
+      <span class="box"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5l3.5 3.5 7.5-8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="t-main"><span class="t-label">Morning anchor</span><span class="t-note">Greek yogurt + berries + chia</span></span>
+    </button>
+    <button class="toggle" data-key="m_mid" aria-pressed="false">
+      <span class="box"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5l3.5 3.5 7.5-8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="t-main"><span class="t-label">Midday anchor</span><span class="t-note">Protein + something with fiber</span></span>
+    </button>
+    <button class="toggle" data-key="m_pm" aria-pressed="false">
+      <span class="box"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5l3.5 3.5 7.5-8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="t-main"><span class="t-label">Evening anchor</span><span class="t-note">Protein + veg or beans</span></span>
+    </button>
+    <div class="water">
+      <span class="t-main"><span class="t-label">Water</span><span class="t-note">Fiber needs it — and it helps you feel full</span></span>
+      <div class="stepper">
+        <button id="waterMinus" aria-label="Remove a glass">–</button>
+        <span class="water-count" id="waterCount">0</span>
+        <button id="waterPlus" aria-label="Add a glass">+</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="month-head">
+    <p class="eyebrow" id="monthName">This month</p>
+    <span class="month-cap" id="monthCap"></span>
+  </div>
+  <div class="cal-dow"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+  <div class="cal" id="cal"></div>
+</section>
+
+<section class="card">
+  <p class="eyebrow" style="margin-bottom:4px;">Keep close</p>
+  <details class="ref">
+    <summary>Your 2× / week strength session <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3.5L10.5 8 6 12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+    <div class="ref-body">
+      <p>Two easy rounds, ~20 min. Light and controlled — stop on any pinch.</p>
+      <ul>
+        <li>Goblet squat — 10</li>
+        <li>One-arm dumbbell row — 10 each side</li>
+        <li>Dumbbell floor press (on your mat) — 10</li>
+        <li>Dumbbell glute bridge — 12</li>
+        <li>Bird-dog — 8 each side</li>
+        <li>Dead bug — 8 each side</li>
+      </ul>
+      <div class="ex">At the gym, machines give you more back support anytime: leg press, seated row, lat pulldown, leg curl. Same workout, steadier.</div>
+      <p class="sub">Back-safe until you're cleared</p>
+      <p>Skip heavy deadlifts, back squats, overhead pressing, and any loaded twisting. The glute bridges, bird-dogs, and dead bugs are the ones quietly protecting your lower back.</p>
+    </div>
+  </details>
+  <details class="ref">
+    <summary>No-cook grab list <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3.5L10.5 8 6 12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+    <div class="ref-body">
+      <p class="sub">Protein anchors</p>
+      <ul>
+        <li>Greek yogurt · cottage cheese</li>
+        <li>Pre-boiled eggs · egg bites</li>
+        <li>Rotisserie / pre-cooked grilled chicken</li>
+        <li>Deli turkey roll-ups · string cheese</li>
+        <li>Tuna or salmon packets</li>
+        <li>Protein shake (ready-to-drink) · jerky</li>
+      </ul>
+      <p class="sub">Fiber boosters</p>
+      <ul>
+        <li>Raspberries (the fiber champ) · apple, pear with skin</li>
+        <li>Avocado · chia or ground flax in yogurt</li>
+        <li>Steam-in-bag broccoli, green beans</li>
+        <li>Baby carrots · snap peas · cucumber + hummus</li>
+        <li>TJ's steamed lentil / black bean pouches</li>
+        <li>Wasa or whole-grain crackers · bagged popcorn</li>
+      </ul>
+      <p class="sub">Combo grabs — the anti-fast-food move</p>
+      <ul>
+        <li class="combo">Greek yogurt + raspberries + chia</li>
+        <li class="combo">Cottage cheese + steamed edamame</li>
+        <li class="combo">Turkey roll-ups + baby carrots + hummus</li>
+        <li class="combo">Tuna packet + whole-grain crackers + cucumber</li>
+        <li class="combo">Bean & cheese on a high-fiber tortilla</li>
+      </ul>
+      <div class="ex">Fiber goal: work toward <strong>25–30g a day</strong>, but add it gradually and drink water as you go — a sudden jump can backfire.</div>
+    </div>
+  </details>
+  <details class="ref">
+    <summary>The two rules <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3.5L10.5 8 6 12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+    <div class="ref-body">
+      <p><strong>The floor is one thing.</strong> A rough day means a 5-minute walk <em>or</em> one round <em>or</em> a single anchor — and that fully counts.</p>
+      <p><strong>No fixed days.</strong> "Two strength sessions this week, whenever" survives a tired or busy week far better than locking in set days.</p>
+    </div>
+  </details>
+</section>
+
+<footer>
+  <button class="reset" id="resetBtn">Clear today</button>
+  <p class="saved">Saved on this device</p>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var KEY="groundwork.v1";
+  var TOGGLES=["walk","strength","m_am","m_mid","m_pm"];
+  function load(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return {};}}
+  function save(d){try{localStorage.setItem(KEY,JSON.stringify(d));}catch(e){}}
+  var store=load();
+
+  function ymd(dt){return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");}
+  function counts(rec){return !!(rec&&(rec.walk||rec.strength||rec.m_am||rec.m_mid||rec.m_pm));}
+
+  var today=new Date();
+  var todayKey=ymd(today);
+  if(!store[todayKey])store[todayKey]={};
+  var rec=store[todayKey];
+
+  var hh=today.getHours();
+  document.getElementById("greet").textContent=(hh<12?"Good morning":hh<18?"Good afternoon":"Good evening")+", Melissa.";
+  document.getElementById("date").textContent=today.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+
+  function streak(){
+    var n=0,d=new Date(today);
+    if(!counts(store[ymd(d)]))d.setDate(d.getDate()-1);
+    while(counts(store[ymd(d)])){n++;d.setDate(d.getDate()-1);}
+    return n;
+  }
+  function weekStart(){var d=new Date(today);d.setDate(d.getDate()-((d.getDay()+6)%7));d.setHours(0,0,0,0);return d;}
+  function strengthThisWeek(){var s=weekStart(),n=0;for(var i=0;i<7;i++){var k=ymd(new Date(s.getFullYear(),s.getMonth(),s.getDate()+i));if(store[k]&&store[k].strength)n++;}return n;}
+  function monthCount(){
+    var y=today.getFullYear(),m=today.getMonth(),n=0,dim=new Date(y,m+1,0).getDate();
+    for(var i=1;i<=dim;i++){if(counts(store[ymd(new Date(y,m,i))]))n++;}
+    return n;
+  }
+
+  // ---- Just One Thing ----
+  var jotOpen=false, jotIdx=0;
+  function suggestions(){
+    var s=[];
+    if(!(rec.water>=1))s.push({t:"Refill your water — just one glass.",act:function(){rec.water=(rec.water||0)+1;}});
+    if(!rec.walk)s.push({t:"A 5-minute walk. Out the door is the whole goal.",act:function(){rec.walk=true;}});
+    if(!rec.m_am&&!rec.m_mid&&!rec.m_pm)s.push({t:"One protein + fiber bite. Yogurt and berries counts.",act:function(){rec.m_am=true;}});
+    else if(!rec.m_mid&&!rec.m_pm)s.push({t:"One more small anchor — protein plus something with fiber.",act:function(){rec.m_mid=true;}});
+    if(!rec.strength)s.push({t:"Just one round of the strength session. About 5 minutes.",act:function(){rec.strength=true;}});
+    return s;
+  }
+  function renderJot(){
+    var panel=document.getElementById("jotPanel");
+    var txt=document.getElementById("jotText");
+    var acts=document.getElementById("jotActions");
+    panel.classList.toggle("open",jotOpen);
+    if(!jotOpen)return;
+    var list=suggestions();
+    acts.innerHTML="";
+    if(list.length===0){
+      txt.textContent="You've done plenty today. Resting counts too.";
+      return;
+    }
+    if(jotIdx>=list.length)jotIdx=0;
+    var pick=list[jotIdx];
+    txt.textContent=pick.t;
+    var doBtn=document.createElement("button");
+    doBtn.className="do";doBtn.textContent="Mark it done";
+    doBtn.onclick=function(){pick.act();save(store);jotOpen=false;jotIdx=0;render();};
+    acts.appendChild(doBtn);
+    if(list.length>1){
+      var more=document.createElement("button");
+      more.textContent="Something else";
+      more.onclick=function(){jotIdx=(jotIdx+1)%list.length;renderJot();};
+      acts.appendChild(more);
+    }
+  }
+  document.getElementById("jotBtn").addEventListener("click",function(){jotOpen=!jotOpen;jotIdx=0;renderJot();});
+
+  // ---- calendar ----
+  function renderCal(){
+    var cal=document.getElementById("cal");cal.innerHTML="";
+    var y=today.getFullYear(),m=today.getMonth();
+    var lead=(new Date(y,m,1).getDay()+6)%7;
+    var dim=new Date(y,m+1,0).getDate();
+    for(var b=0;b<lead;b++){var bl=document.createElement("div");bl.className="cell blank";cal.appendChild(bl);}
+    for(var i=1;i<=dim;i++){
+      var dd=new Date(y,m,i),k=ymd(dd);
+      var c=document.createElement("div");
+      c.className="cell"+(counts(store[k])?" on":"")+(k===todayKey?" today":"")+(dd>today&&k!==todayKey?" future":"");
+      c.textContent=i;
+      cal.appendChild(c);
+    }
+    document.getElementById("monthName").textContent=today.toLocaleDateString(undefined,{month:"long"});
+    document.getElementById("monthCap").textContent=monthCount()+" of "+dim+" days";
+  }
+
+  function render(){
+    TOGGLES.forEach(function(k){var b=document.querySelector('.toggle[data-key="'+k+'"]');if(b)b.setAttribute("aria-pressed",rec[k]?"true":"false");});
+    document.getElementById("waterCount").textContent=rec.water||0;
+
+    var sw=strengthThisWeek();
+    document.getElementById("strengthMeta").textContent=sw+"/2 this week";
+    document.getElementById("wpip0").className="pip"+(sw>=1?" on":"");
+    document.getElementById("wpip1").className="pip"+(sw>=2?" on":"");
+
+    var mc=monthCount();
+    document.getElementById("statMonth").textContent=mc+(mc===1?" day":" days");
+    document.getElementById("statStreak").textContent=streak();
+
+    var lit=counts(rec);
+    var hero=document.getElementById("hero");
+    hero.classList.toggle("lit",lit);
+    document.getElementById("heroEyebrow").textContent=lit?"Today ✓":"Today";
+    if(lit){
+      document.getElementById("heroState").textContent="Today counts.";
+      var st=streak();
+      document.getElementById("heroSub").textContent=st>1?("That's "+st+" days running. Anything more is a bonus."):"You showed up. Anything more is a bonus.";
+    }else{
+      document.getElementById("heroState").textContent="A small thing starts the day.";
+      document.getElementById("heroSub").textContent="Feeling stuck? Tap below and I'll pick one for you.";
+    }
+    renderJot();
+    renderCal();
+  }
+
+  document.querySelectorAll(".toggle").forEach(function(btn){
+    btn.addEventListener("click",function(){var k=btn.getAttribute("data-key");rec[k]=!rec[k];save(store);render();});
+  });
+  document.getElementById("waterPlus").addEventListener("click",function(){rec.water=(rec.water||0)+1;save(store);render();});
+  document.getElementById("waterMinus").addEventListener("click",function(){rec.water=Math.max(0,(rec.water||0)-1);save(store);render();});
+  document.getElementById("resetBtn").addEventListener("click",function(){if(confirm("Clear everything tracked today? Past days stay put.")){store[todayKey]={};rec=store[todayKey];jotOpen=false;save(store);render();}});
+
+  render();
+})();
